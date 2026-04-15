@@ -30,6 +30,9 @@ Route::prefix('auth')->group(function () {
 // ------------------------------------------------------------------ Authenticated routes
 Route::middleware('auth:sanctum')->group(function () {
 
+    // ---------------- Chauffeurs proches (passager) ----
+    Route::get('/drivers/nearby', [DriverController::class, 'nearby']);
+
     // ---------------- Passager : rides ----------------
     Route::prefix('rides')->group(function () {
         Route::post('/estimate', [RideController::class, 'estimate']);

@@ -23,6 +23,43 @@ class DriverController extends Controller
     }
 
     /**
+     * GET /api/drivers/nearby — chauffeurs en ligne visibles par les passagers.
+     */
+    public function nearby(Request $request): JsonResponse
+    {
+        $lat = (float) $request->query('lat', -1.5660);
+        $lng = (float) $request->query('lng', 13.2581);
+        $radiusKm = (float) $request->query('radius', 10);
+
+        [$minLat, $maxLat, $minLng, $maxLng] = $this->geo->boundingBox($lat, $lng, $radiusKm);
+
+        $drivers = \App\Models\Driver::with('user:id,name', 'activeVehicle')
+            ->where('is_online', true)
+            ->where('status', 'approved')
+            ->whereNotNull('current_lat')
+            ->whereNotNull('current_lng')
+            ->whereBetween('current_lat', [$minLat, $maxLat])
+            ->whereBetween('current_lng', [$minLng, $maxLng])
+            ->get();
+
+        return response()->json([
+            'drivers' => $drivers->map(fn (\App\Models\Driver $d) => [
+                'id'          => $d->id,
+                'name'        => $d->user?->name,
+                'lat'         => (float) $d->current_lat,
+                'lng'         => (float) $d->current_lng,
+                'heading'     => $d->current_heading,
+                'vehicle'     => $d->activeVehicle ? [
+                    'brand' => $d->activeVehicle->brand,
+                    'model' => $d->activeVehicle->model,
+                    'color' => $d->activeVehicle->color,
+                    'plate' => $d->activeVehicle->plate_number,
+                ] : null,
+            ])->values(),
+        ]);
+    }
+
+    /**
      * POST /api/driver/toggle-online
      */
     public function toggleOnline(Request $request): JsonResponse
