@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------------- Admin ----------------
     Route::prefix('admin')->group(function () {
         Route::get('/dashboard',  [AdminController::class, 'dashboard']);
+        Route::get('/revenue',    [AdminController::class, 'revenue']);
         Route::get('/rides',      [AdminController::class, 'rides']);
         Route::get('/drivers',    [AdminController::class, 'drivers']);
         Route::get('/drivers/locations', [AdminController::class, 'driverLocations']);
