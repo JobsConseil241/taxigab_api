@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\RideController;
+use App\Http\Controllers\Api\RideMessageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,6 +44,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{ride}',    [RideController::class, 'show'])->whereNumber('ride');
         Route::post('/{ride}/cancel', [RideController::class, 'cancel'])->whereNumber('ride');
         Route::post('/{ride}/rate',   [RideController::class, 'rate'])->whereNumber('ride');
+
+        // Messagerie passager ↔ chauffeur
+        Route::get('/{ride}/messages',  [RideMessageController::class, 'index'])->whereNumber('ride');
+        Route::post('/{ride}/messages', [RideMessageController::class, 'store'])->whereNumber('ride');
     });
 
     // ---------------- Chauffeur ----------------
@@ -51,6 +56,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/location',      [LocationController::class, 'update']);
         Route::get('/available-rides', [DriverController::class, 'availableRides']);
         Route::get('/stats',           [DriverController::class, 'stats']);
+        Route::get('/history',         [DriverController::class, 'history']);
+        Route::get('/ratings',         [DriverController::class, 'ratings']);
 
         Route::post('/rides/{ride}/accept',   [DriverController::class, 'accept'])->whereNumber('ride');
         Route::post('/rides/{ride}/arrive',   [DriverController::class, 'arrive'])->whereNumber('ride');

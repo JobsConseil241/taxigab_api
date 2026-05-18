@@ -233,6 +233,59 @@ class DriverController extends Controller
         ]);
     }
 
+    /**
+     * GET /api/driver/history — courses du chauffeur (50 dernières).
+     */
+    public function history(Request $request): JsonResponse
+    {
+        $driver = $this->driverOrFail($request);
+
+        $rides = Ride::where('driver_id', $driver->id)
+            ->with(['passenger:id,name,phone'])
+            ->orderByDesc('requested_at')
+            ->limit(50)
+            ->get();
+
+        $controller = app(RideController::class);
+
+        return response()->json([
+            'rides' => $rides->map(fn ($r) => $controller->transformRide($r)),
+        ]);
+    }
+
+    /**
+     * GET /api/driver/ratings — notes et avis reçus.
+     */
+    public function ratings(Request $request): JsonResponse
+    {
+        $driver = $this->driverOrFail($request);
+
+        $rated = Ride::where('driver_id', $driver->id)
+            ->whereNotNull('rating')
+            ->with(['passenger:id,name'])
+            ->orderByDesc('completed_at')
+            ->limit(100)
+            ->get();
+
+        $distribution = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+        foreach ($rated as $r) {
+            $distribution[$r->rating] = ($distribution[$r->rating] ?? 0) + 1;
+        }
+
+        return response()->json([
+            'average' => round((float) $driver->rating_avg, 2),
+            'total'   => $rated->count(),
+            'distribution' => $distribution,
+            'reviews' => $rated->map(fn ($r) => [
+                'ride_id'        => (int) $r->id,
+                'rating'         => (int) $r->rating,
+                'review'         => $r->review,
+                'passenger_name' => $r->passenger?->name,
+                'completed_at'   => optional($r->completed_at)->toIso8601String(),
+            ]),
+        ]);
+    }
+
     // ---------------------------------------------------------------- Helpers
 
     private function driverOrFail(Request $request)

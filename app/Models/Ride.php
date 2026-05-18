@@ -92,6 +92,11 @@ class Ride extends Model
         return $this->hasMany(RideStatusLog::class);
     }
 
+    public function messages(): HasMany
+    {
+        return $this->hasMany(RideMessage::class);
+    }
+
     // ---------------------------------------------------------------- Scopes
 
     public function scopeRequested($query)
