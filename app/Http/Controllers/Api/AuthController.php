@@ -85,6 +85,49 @@ class AuthController extends Controller
         ]);
     }
 
+    public function updateMe(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'name'       => ['sometimes', 'string', 'max:120'],
+            'phone'      => ['sometimes', 'nullable', 'string', 'max:32'],
+            'language'   => ['sometimes', 'in:fr,en'],
+            'avatar_url' => ['sometimes', 'nullable', 'url', 'max:255'],
+            'email'      => ['sometimes', 'email', 'max:160', 'unique:users,email,' . $user->id],
+        ]);
+
+        $user->fill($data)->save();
+
+        return response()->json([
+            'user' => $this->transformUser($user->fresh()->load('driver.activeVehicle')),
+        ]);
+    }
+
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password'         => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => __('Current password is incorrect.'),
+            ]);
+        }
+
+        $user->forceFill(['password' => Hash::make($data['password'])])->save();
+
+        // Revoke all other tokens to force re-login on other devices.
+        $current = $request->user()->currentAccessToken();
+        $user->tokens()->where('id', '!=', $current->id)->delete();
+
+        return response()->json(['message' => 'Password updated']);
+    }
+
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
